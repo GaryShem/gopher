@@ -23,13 +23,13 @@ func ParseServerFlags() (ServerConfig, error) {
 	if err := env.Parse(&ec); err != nil {
 		return result, err
 	}
-	if ec.RunAddress == "" {
+	if ec.RunAddress != "" {
 		result.RunAddress = ec.RunAddress
 	}
-	if ec.DBString == "" {
+	if ec.DBString != "" {
 		result.DBString = ec.DBString
 	}
-	if ec.AccrualAddress == "" {
+	if ec.AccrualAddress != "" {
 		result.AccrualAddress = ec.AccrualAddress
 	}
 	return result, nil
