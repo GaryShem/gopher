@@ -12,13 +12,16 @@ func (r *RepoMemory) BalanceList(userID int) (repository.BalanceInfo, error) {
 	defer r.lock.Unlock()
 	balance, ok := r.UserIDToBalance[userID]
 	if !ok {
-		return repository.BalanceInfo{}, repository.ErrUserNotFound
+		return repository.BalanceInfo{0, 0}, repository.ErrUserNotFound
 	}
 	return balance, nil
 }
 func (r *RepoMemory) BalanceWithdraw(userID int, orderID string, amount float64) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	if err := repository.ValidateOrderID(orderID); err != nil {
+		return repository.ErrOrderIDFormatInvalid
+	}
 	balance, ok := r.UserIDToBalance[userID]
 	if !ok {
 		return repository.ErrUserNotFound
@@ -41,7 +44,7 @@ func (r *RepoMemory) BalanceWithdrawInfo(userID int) ([]repository.WithdrawalInf
 	defer r.lock.Unlock()
 	info, ok := r.UserIDToWithdrawal[userID]
 	if !ok {
-		return []repository.WithdrawalInfo{}, repository.ErrUserNotFound
+		return []repository.WithdrawalInfo{}, repository.ErrNoWithdrawals
 	}
 	return info, nil
 }

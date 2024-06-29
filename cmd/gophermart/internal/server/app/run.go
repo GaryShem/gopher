@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/accrual"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/config"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/logging"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/router"
@@ -14,7 +15,8 @@ func RunServer(sc config.ServerConfig) error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return err
 	}
-	repo, err := memory.NewRepoMemory("")
+	accrualTracker := accrual.NewBonusTracker(sc.AccrualAddress)
+	repo, err := memory.NewRepoMemory("", *accrualTracker)
 	//repo, err := postgresql.NewRepoPostgreSQL(sc.DBString)
 	if err != nil {
 		return err

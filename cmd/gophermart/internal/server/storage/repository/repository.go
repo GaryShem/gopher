@@ -19,6 +19,7 @@ var ErrOrderIDFormatInvalid = errors.New("order ID format is invalid")
 // balance errors
 
 var ErrBalanceNotEnough = errors.New("balance not enough")
+var ErrNoWithdrawals error = errors.New("no withdrawals for current user")
 
 type User struct {
 	ID       int
@@ -27,20 +28,20 @@ type User struct {
 }
 
 type Order struct {
-	Number     string `json:"number"`
-	Status     string `json:"status"`
-	Accrual    int    `json:"accrual,omitempty"`
-	UploadedAt string `json:"uploaded_at"`
+	Number     string  `json:"number"`
+	Status     string  `json:"status"`
+	Accrual    float64 `json:"accrual,omitempty"`
+	UploadedAt string  `json:"uploaded_at,omitempty"`
 }
 
 type BalanceInfo struct {
-	Current   float64
-	Withdrawn float64
+	Current   float64 `json:"current"`
+	Withdrawn float64 `json:"withdrawn"`
 }
 type WithdrawalInfo struct {
-	Order       string
-	Sum         float64
-	ProcessedAt string
+	Order       string  `json:"order"`
+	Sum         float64 `json:"sum"`
+	ProcessedAt string  `json:"processed_at,omitempty"`
 }
 type RegisterRequest struct {
 	Login    string `json:"login"`
@@ -53,8 +54,8 @@ type Repository interface {
 	GetUserByName(name string) (User, error)
 
 	OrderUpload(userID int, orderID string) error
-	OrderGet(userID int) ([]Order, error)
 	GetOrdersByUserID(userID int) ([]Order, error)
+	UpdateOrderProcessing(orderID string) error
 
 	BalanceList(userID int) (BalanceInfo, error)
 	BalanceWithdraw(userID int, orderID string, amount float64) error

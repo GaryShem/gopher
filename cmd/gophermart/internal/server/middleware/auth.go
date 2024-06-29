@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
@@ -16,7 +15,6 @@ type AuthMiddleware struct {
 
 func (am *AuthMiddleware) Login(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(1 * time.Second)
 		username, password, ok := r.BasicAuth()
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)

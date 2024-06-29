@@ -20,11 +20,11 @@ func GopherRouter(repo repository.Repository) (chi.Router, error) {
 		r.Route(`/api/user`, func(r chi.Router) {
 			r.Post(`/orders`, h.OrderUpload)
 			r.Get(`/orders`, h.OrderList)
+			r.Get(`/withdrawals`, h.BalanceWithdrawInfo)
 
 			r.Route(`/balance`, func(r chi.Router) {
 				r.Get(`/`, h.BalanceInfo)
 				r.Post(`/withdraw`, h.BalanceWithdraw)
-				r.Get(`/withdrawals`, h.BalanceWithdrawInfo)
 			})
 		})
 	})

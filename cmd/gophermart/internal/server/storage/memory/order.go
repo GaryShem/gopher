@@ -1,10 +1,14 @@
 package memory
 
 import (
+	"errors"
+	"sort"
 	"time"
 
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
+
+var ErrInternalConsistencyError = errors.New("internal consistency error")
 
 func (r *RepoMemory) OrderUpload(userID int, orderID string) error {
 	r.lock.Lock()
@@ -24,32 +28,51 @@ func (r *RepoMemory) OrderUpload(userID int, orderID string) error {
 	}
 	orders, ok := r.UserIDToOrder[userID]
 	if !ok {
-		orders = []repository.Order{}
+		orders = map[string]repository.Order{}
 	}
-	r.UserIDToOrder[userID] = append(orders, repository.Order{
+	orders[orderID] = repository.Order{
 		Number:     orderID,
 		Status:     "NEW",
 		UploadedAt: time.Now().Format(time.RFC3339),
-	})
-	return nil
-}
-
-func (r *RepoMemory) OrderGet(userID int) ([]repository.Order, error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	orders, ok := r.UserIDToOrder[userID]
-	if !ok {
-		return []repository.Order{}, nil
 	}
-	return orders, nil
+	r.UserIDToOrder[userID] = orders
+	go r.UpdateOrderProcessing(orderID)
+	return nil
 }
 
 func (r *RepoMemory) GetOrdersByUserID(userID int) ([]repository.Order, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	orders, ok := r.UserIDToOrder[userID]
-	if !ok {
-		return []repository.Order{}, nil
+	result := make([]repository.Order, 0)
+	if ok {
+		for _, order := range orders {
+			result = append(result, order)
+		}
 	}
-	return orders, nil
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].UploadedAt < result[j].UploadedAt
+	})
+	return result, nil
+}
+
+func (r *RepoMemory) UpdateOrderProcessing(orderID string) error {
+	info, err := r.accrual.UpdateOrder(orderID)
+	if err != nil {
+		return err
+	}
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	for u := range r.UserIDToOrder {
+		_, ok := r.UserIDToOrder[u][orderID]
+		if ok {
+			r.UserIDToOrder[u][orderID] = *info
+			balance := r.UserIDToBalance[u]
+			balance.Current += info.Accrual
+			r.UserIDToBalance[u] = balance
+			return nil
+		}
+	}
+	return ErrInternalConsistencyError
 }

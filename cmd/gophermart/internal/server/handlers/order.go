@@ -45,19 +45,26 @@ func (l *LoyaltyHandler) OrderList(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	orders, err := l.repo.OrderGet(userID)
+	orders, err := l.repo.GetOrdersByUserID(userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if len(orders) == 0 {
-		w.WriteHeader(http.StatusNoContent)
-	}
+	//if len(orders) == 0 {
+	//	w.Header().Set("Content-Type", "application/json")
+	//	w.WriteHeader(http.StatusNoContent)
+	//	return
+	//}
 	jsonData, err := json.Marshal(orders)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
 	_, _ = w.Write(jsonData)
 }

@@ -10,13 +10,13 @@ func (r *RepoPostgreSQL) OrderUpload(userID int, orderID string) error {
 	panic("implement me")
 }
 
-func (r *RepoPostgreSQL) OrderGet(userID int) ([]repository.Order, error) {
+func (r *RepoPostgreSQL) GetOrdersByUserID(userID int) ([]repository.Order, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	panic("implement me")
 }
 
-func (r *RepoPostgreSQL) GetOrdersByUserID(userID int) ([]repository.Order, error) {
+func (r RepoPostgreSQL) UpdateOrderProcessing(orderID string) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	panic("implement me")
