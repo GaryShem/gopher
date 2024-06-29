@@ -6,6 +6,7 @@ import (
 
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/config"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/logging"
+	localMiddleware "github.com/GaryShem/gopher/cmd/gophermart/internal/server/middleware"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/router"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/memory"
 )
@@ -15,7 +16,7 @@ func RunServer(sc config.ServerConfig) error {
 		return err
 	}
 	repo := memory.NewRepoMemory("")
-	gRouter, err := router.GopherRouter(repo)
+	gRouter, err := router.GopherRouter(repo, localMiddleware.LogBody)
 	if err != nil {
 		return fmt.Errorf("failed to init router: %w", err)
 	}
