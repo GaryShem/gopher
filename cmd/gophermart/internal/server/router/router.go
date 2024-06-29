@@ -17,16 +17,12 @@ func GopherRouter(repo repository.Repository) (chi.Router, error) {
 	router.Post(`/api/user/login`, h.UserLogin)
 	router.Group(func(r chi.Router) {
 		r.Use(authMiddleware.Login)
-		r.Route(`/api/user`, func(r chi.Router) {
-			r.Post(`/orders`, h.OrderUpload)
-			r.Get(`/orders`, h.OrderList)
-			r.Get(`/withdrawals`, h.BalanceWithdrawInfo)
+		r.Post(`/api/user/orders`, h.OrderUpload)
+		r.Get(`/api/user/orders`, h.OrderList)
+		r.Get(`/api/user/balance`, h.BalanceInfo)
+		r.Post(`/api/user/balance/withdraw`, h.BalanceWithdraw)
+		r.Get(`/api/user/withdrawals`, h.BalanceWithdrawInfo)
 
-			r.Route(`/balance`, func(r chi.Router) {
-				r.Get(`/`, h.BalanceInfo)
-				r.Post(`/withdraw`, h.BalanceWithdraw)
-			})
-		})
 	})
 	return router, nil
 }

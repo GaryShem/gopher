@@ -42,12 +42,12 @@ func (l *LoyaltyHandler) OrderUpload(w http.ResponseWriter, r *http.Request) {
 func (l *LoyaltyHandler) OrderList(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIdHeader))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(503)
 		return
 	}
 	orders, err := l.repo.GetOrdersByUserID(userID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(502)
 		return
 	}
 	//if len(orders) == 0 {
@@ -57,7 +57,7 @@ func (l *LoyaltyHandler) OrderList(w http.ResponseWriter, r *http.Request) {
 	//}
 	jsonData, err := json.Marshal(orders)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(501)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

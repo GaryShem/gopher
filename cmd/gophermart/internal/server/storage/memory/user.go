@@ -25,7 +25,6 @@ func (r *RepoMemory) UserRegister(name, password string) error {
 func (r *RepoMemory) UserLogin(name, password string) (int, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	logging.Log.Infoln("User login attempt", name, password)
 	for _, u := range r.Users {
 		if u.Name == name {
 			if u.Password == password {

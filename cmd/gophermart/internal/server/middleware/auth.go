@@ -3,7 +3,9 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/logging"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
 
@@ -15,6 +17,7 @@ type AuthMiddleware struct {
 
 func (am *AuthMiddleware) Login(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		startRequest := time.Now()
 		username, password, ok := r.BasicAuth()
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -28,5 +31,8 @@ func (am *AuthMiddleware) Login(next http.Handler) http.Handler {
 		}
 		r.Header.Set(UserIdHeader, fmt.Sprintf("%v", id))
 		next.ServeHTTP(w, r)
+		endRequest := time.Now()
+		duration := endRequest.Sub(startRequest)
+		logging.Log.Infoln("request took", duration)
 	})
 }

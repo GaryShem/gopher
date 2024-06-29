@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/logging"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
 
@@ -57,6 +58,10 @@ func (r *RepoMemory) GetOrdersByUserID(userID int) ([]repository.Order, error) {
 }
 
 func (r *RepoMemory) UpdateOrderProcessing(orderID string) error {
+	startUpdate := time.Now()
+	defer func() {
+		logging.Log.Infoln("UpdateOrderProcessing took", time.Since(startUpdate))
+	}()
 	info, err := r.accrual.UpdateOrder(orderID)
 	if err != nil {
 		return err
@@ -71,8 +76,10 @@ func (r *RepoMemory) UpdateOrderProcessing(orderID string) error {
 			balance := r.UserIDToBalance[u]
 			balance.Current += info.Accrual
 			r.UserIDToBalance[u] = balance
+			logging.Log.Infoln("UpdateOrderProcessing success")
 			return nil
 		}
 	}
+	logging.Log.Infoln("UpdateOrderProcessing fail")
 	return ErrInternalConsistencyError
 }

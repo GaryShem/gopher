@@ -14,19 +14,19 @@ import (
 func (l *LoyaltyHandler) BalanceInfo(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIdHeader))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(501)
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
 	info, err := l.repo.BalanceList(userID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(502)
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
 	json, err := json.Marshal(info)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(503)
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
