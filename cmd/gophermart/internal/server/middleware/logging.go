@@ -23,5 +23,7 @@ func LogBody(next http.Handler) http.Handler {
 		}
 		logging.Log.Infoln(string(body))
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
+		next.ServeHTTP(w, r)
+		logging.Log.Infoln("response code", w.Header().Get("status"))
 	})
 }
