@@ -7,7 +7,7 @@ import (
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
 
-const USER_ID_HEADER = "used-id"
+const UserIdHeader = "used-id"
 
 type AuthMiddleware struct {
 	Repo repository.Repository
@@ -26,7 +26,7 @@ func (am *AuthMiddleware) Login(next http.Handler) http.Handler {
 			_, _ = w.Write([]byte(err.Error()))
 			return
 		}
-		r.Header.Set(USER_ID_HEADER, fmt.Sprintf("%v", id))
+		r.Header.Set(UserIdHeader, fmt.Sprintf("%v", id))
 		next.ServeHTTP(w, r)
 	})
 }
