@@ -12,7 +12,7 @@ func (r *RepoMemory) BalanceList(userID int) (repository.BalanceInfo, error) {
 	defer r.lock.Unlock()
 	balance, ok := r.UserIDToBalance[userID]
 	if !ok {
-		return repository.BalanceInfo{0, 0}, repository.ErrUserNotFound
+		return repository.BalanceInfo{}, repository.ErrUserNotFound
 	}
 	return balance, nil
 }

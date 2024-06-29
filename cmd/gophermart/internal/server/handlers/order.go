@@ -12,7 +12,7 @@ import (
 )
 
 func (l *LoyaltyHandler) OrderUpload(w http.ResponseWriter, r *http.Request) {
-	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIdHeader))
+	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIDHeader))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -40,7 +40,7 @@ func (l *LoyaltyHandler) OrderUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *LoyaltyHandler) OrderList(w http.ResponseWriter, r *http.Request) {
-	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIdHeader))
+	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIDHeader))
 	if err != nil {
 		w.WriteHeader(503)
 		return

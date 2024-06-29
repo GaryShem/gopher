@@ -19,7 +19,7 @@ var ErrOrderIDFormatInvalid = errors.New("order ID format is invalid")
 // balance errors
 
 var ErrBalanceNotEnough = errors.New("balance not enough")
-var ErrNoWithdrawals error = errors.New("no withdrawals for current user")
+var ErrNoWithdrawals = errors.New("no withdrawals for current user")
 
 type User struct {
 	ID       int
@@ -38,11 +38,13 @@ type BalanceInfo struct {
 	Current   float64 `json:"current"`
 	Withdrawn float64 `json:"withdrawn"`
 }
+
 type WithdrawalInfo struct {
 	Order       string  `json:"order"`
 	Sum         float64 `json:"sum"`
 	ProcessedAt string  `json:"processed_at,omitempty"`
 }
+
 type RegisterRequest struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`

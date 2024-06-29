@@ -12,7 +12,7 @@ import (
 )
 
 func (l *LoyaltyHandler) BalanceInfo(w http.ResponseWriter, r *http.Request) {
-	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIdHeader))
+	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIDHeader))
 	if err != nil {
 		w.WriteHeader(501)
 		_, _ = w.Write([]byte(err.Error()))
@@ -33,11 +33,10 @@ func (l *LoyaltyHandler) BalanceInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(json)
-	return
 }
 
 func (l *LoyaltyHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
-	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIdHeader))
+	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIDHeader))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -70,7 +69,7 @@ func (l *LoyaltyHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request)
 }
 
 func (l *LoyaltyHandler) BalanceWithdrawInfo(w http.ResponseWriter, r *http.Request) {
-	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIdHeader))
+	userID, err := strconv.Atoi(r.Header.Get(middleware.UserIDHeader))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
