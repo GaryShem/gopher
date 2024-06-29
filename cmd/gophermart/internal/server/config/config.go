@@ -15,7 +15,7 @@ type ServerConfig struct {
 func ParseServerFlags() (ServerConfig, error) {
 	result := ServerConfig{}
 	flag.StringVar(&result.RunAddress, "a", "localhost:8080", "service address")
-	flag.StringVar(&result.DBString, "d", "", "database URI")
+	flag.StringVar(&result.DBString, "d", "host=localhost user=postgres password=1231 dbname=postgres sslmode=disable", "database URI")
 	flag.StringVar(&result.AccrualAddress, "r", "", "accrual address")
 	flag.Parse()
 

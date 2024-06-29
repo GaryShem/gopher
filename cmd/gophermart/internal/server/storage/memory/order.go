@@ -7,6 +7,8 @@ import (
 )
 
 func (r *RepoMemory) OrderUpload(userID int, orderID string) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	if err := repository.ValidateOrderID(orderID); err != nil {
 		return err
 	}
@@ -33,6 +35,18 @@ func (r *RepoMemory) OrderUpload(userID int, orderID string) error {
 }
 
 func (r *RepoMemory) OrderGet(userID int) ([]repository.Order, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	orders, ok := r.UserIDToOrder[userID]
+	if !ok {
+		return []repository.Order{}, nil
+	}
+	return orders, nil
+}
+
+func (r *RepoMemory) GetOrdersByUserID(userID int) ([]repository.Order, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	orders, ok := r.UserIDToOrder[userID]
 	if !ok {
 		return []repository.Order{}, nil

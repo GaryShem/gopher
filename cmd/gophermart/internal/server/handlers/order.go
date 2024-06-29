@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/middleware"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
 
 func (l *LoyaltyHandler) OrderUpload(w http.ResponseWriter, r *http.Request) {
-	userID, err := strconv.Atoi(r.Header.Get("user_id"))
+	userID, err := strconv.Atoi(r.Header.Get(middleware.USER_ID_HEADER))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -29,7 +30,7 @@ func (l *LoyaltyHandler) OrderUpload(w http.ResponseWriter, r *http.Request) {
 		} else if errors.Is(err, repository.ErrOrderUploadedDifferentUser) {
 			w.WriteHeader(http.StatusConflict)
 		} else if errors.Is(err, repository.ErrOrderIDFormatInvalid) {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusUnprocessableEntity)
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
 		}
@@ -39,8 +40,7 @@ func (l *LoyaltyHandler) OrderUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *LoyaltyHandler) OrderList(w http.ResponseWriter, r *http.Request) {
-	userIDStr := r.Header.Get("user_id")
-	userID, err := strconv.Atoi(userIDStr)
+	userID, err := strconv.Atoi(r.Header.Get(middleware.USER_ID_HEADER))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -58,6 +58,6 @@ func (l *LoyaltyHandler) OrderList(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(jsonData)
-	return
 }

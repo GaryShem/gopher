@@ -27,10 +27,10 @@ type User struct {
 }
 
 type Order struct {
-	Number     string
-	Status     string
-	Accrual    int
-	UploadedAt string
+	Number     string `json:"number"`
+	Status     string `json:"status"`
+	Accrual    int    `json:"accrual,omitempty"`
+	UploadedAt string `json:"uploaded_at"`
 }
 
 type BalanceInfo struct {
@@ -42,13 +42,19 @@ type WithdrawalInfo struct {
 	Sum         float64
 	ProcessedAt string
 }
+type RegisterRequest struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
 
 type Repository interface {
 	UserRegister(name, password string) error
 	UserLogin(name, password string) (int, error)
+	GetUserByName(name string) (User, error)
 
 	OrderUpload(userID int, orderID string) error
 	OrderGet(userID int) ([]Order, error)
+	GetOrdersByUserID(userID int) ([]Order, error)
 
 	BalanceList(userID int) (BalanceInfo, error)
 	BalanceWithdraw(userID int, orderID string, amount float64) error
