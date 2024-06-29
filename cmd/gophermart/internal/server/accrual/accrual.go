@@ -45,7 +45,7 @@ func (b *BonusTracker) UpdateOrder(orderID string) (*repository.Order, error) {
 			if result.Status == "INVALID" || result.Status == "PROCESSED" {
 				return result, nil
 			}
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * 100)
 		case http.StatusNoContent:
 			return nil, ErrOrderNotRegistered
 		case http.StatusTooManyRequests:
