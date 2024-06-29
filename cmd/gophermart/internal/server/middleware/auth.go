@@ -1,0 +1,30 @@
+package middleware
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
+)
+
+type AuthMiddleware struct {
+	Repo repository.Repository
+}
+
+func (am *AuthMiddleware) Login(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		id, err := am.Repo.UserLogin(username, password)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(err.Error()))
+			return
+		}
+		r.Header.Set("user_id", fmt.Sprintf("%v", id))
+		next.ServeHTTP(w, r)
+	})
+}
