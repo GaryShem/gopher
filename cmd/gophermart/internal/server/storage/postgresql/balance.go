@@ -69,6 +69,9 @@ func (r *RepoPostgreSQL) BalanceWithdrawInfo(userID int) ([]repository.Withdrawa
 	if err != nil {
 		return nil, err
 	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
 	defer func() { _ = rows.Close() }()
 	result := []repository.WithdrawalInfo{}
 	for rows.Next() {

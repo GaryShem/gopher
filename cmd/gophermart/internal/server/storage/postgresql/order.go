@@ -18,11 +18,11 @@ func (r *RepoPostgreSQL) OrderUpload(userID int, orderID string) error {
 		return err
 	}
 	var existingOrder repository.Order
-	orderSelectSql := `SELECT user_id FROM orders WHERE number = @order_id`
+	orderSelectSQL := `SELECT user_id FROM orders WHERE number = @order_id`
 	selectArgs := pgx.NamedArgs{
 		"order_id": orderID,
 	}
-	err := r.db.QueryRow(orderSelectSql, selectArgs).Scan(&existingOrder.UserID)
+	err := r.db.QueryRow(orderSelectSQL, selectArgs).Scan(&existingOrder.UserID)
 	if err == nil {
 		if existingOrder.UserID == userID {
 			return repository.ErrOrderUploadedSameUser
@@ -34,7 +34,7 @@ func (r *RepoPostgreSQL) OrderUpload(userID int, orderID string) error {
 			return err
 		}
 	}
-	orderInsertSql := `INSERT INTO orders 
+	orderInsertSQL := `INSERT INTO orders 
     	(number, user_id, status, accrual, uploaded_at)
 		VALUES (@order_id, @user_id, @status, @accrual, @upload_time)
 		RETURNING number`
@@ -46,7 +46,7 @@ func (r *RepoPostgreSQL) OrderUpload(userID int, orderID string) error {
 		"upload_time": time.Now().Format(time.RFC3339),
 	}
 	var addedOrder repository.Order
-	if err = r.db.QueryRow(orderInsertSql, insertArgs).Scan(&addedOrder.Number); err != nil {
+	if err = r.db.QueryRow(orderInsertSQL, insertArgs).Scan(&addedOrder.Number); err != nil {
 		return err
 	}
 	go r.UpdateOrderProcessing(userID, orderID)
@@ -56,20 +56,23 @@ func (r *RepoPostgreSQL) OrderUpload(userID int, orderID string) error {
 func (r *RepoPostgreSQL) GetOrdersByUserID(userID int) ([]repository.Order, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	orderSelectSql := `SELECT number, status, accrual, uploaded_at FROM orders 
+	orderSelectSQL := `SELECT number, status, accrual, uploaded_at FROM orders 
          WHERE user_id = @user_id
          ORDER BY uploaded_at`
 	selectArgs := pgx.NamedArgs{
 		"user_id": userID,
 	}
 	result := make([]repository.Order, 0)
-	rows, err := r.db.Query(orderSelectSql, selectArgs)
+	rows, err := r.db.Query(orderSelectSQL, selectArgs)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return result, nil
 		} else {
 			return nil, err
 		}
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
 	}
 	defer func() { _ = rows.Close() }()
 	for rows.Next() {
