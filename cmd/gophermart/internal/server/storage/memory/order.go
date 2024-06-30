@@ -37,7 +37,7 @@ func (r *RepoMemory) OrderUpload(userID int, orderID string) error {
 		UploadedAt: time.Now().Format(time.RFC3339),
 	}
 	r.UserIDToOrder[userID] = orders
-	go r.UpdateOrderProcessing(orderID)
+	go r.UpdateOrderProcessing(userID, orderID)
 	return nil
 }
 
@@ -57,7 +57,7 @@ func (r *RepoMemory) GetOrdersByUserID(userID int) ([]repository.Order, error) {
 	return result, nil
 }
 
-func (r *RepoMemory) UpdateOrderProcessing(orderID string) error {
+func (r *RepoMemory) UpdateOrderProcessing(userID int, orderID string) error {
 	startUpdate := time.Now()
 	defer func() {
 		logging.Log.Infoln("UpdateOrderProcessing took", time.Since(startUpdate))
@@ -69,6 +69,7 @@ func (r *RepoMemory) UpdateOrderProcessing(orderID string) error {
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	r.UserIDToOrder[userID][orderID] = *info
 	for u := range r.UserIDToOrder {
 		_, ok := r.UserIDToOrder[u][orderID]
 		if ok {

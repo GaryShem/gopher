@@ -30,6 +30,7 @@ type User struct {
 type Order struct {
 	Number     string  `json:"number"`
 	Status     string  `json:"status"`
+	UserID     int     `json:"-"`
 	Accrual    float64 `json:"accrual,omitempty"`
 	UploadedAt string  `json:"uploaded_at,omitempty"`
 }
@@ -57,7 +58,7 @@ type Repository interface {
 
 	OrderUpload(userID int, orderID string) error
 	GetOrdersByUserID(userID int) ([]Order, error)
-	UpdateOrderProcessing(orderID string) error
+	UpdateOrderProcessing(userID int, orderID string) error
 
 	BalanceList(userID int) (BalanceInfo, error)
 	BalanceWithdraw(userID int, orderID string, amount float64) error

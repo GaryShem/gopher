@@ -50,11 +50,6 @@ func (l *LoyaltyHandler) OrderList(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(502)
 		return
 	}
-	//if len(orders) == 0 {
-	//	w.Header().Set("Content-Type", "application/json")
-	//	w.WriteHeader(http.StatusNoContent)
-	//	return
-	//}
 	jsonData, err := json.Marshal(orders)
 	if err != nil {
 		w.WriteHeader(501)

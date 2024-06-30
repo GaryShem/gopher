@@ -8,7 +8,7 @@ import (
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/config"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/logging"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/router"
-	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/memory"
+	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/postgresql"
 )
 
 func RunServer(sc config.ServerConfig) error {
@@ -16,15 +16,12 @@ func RunServer(sc config.ServerConfig) error {
 		return err
 	}
 	accrualTracker := accrual.NewBonusTracker(sc.AccrualAddress)
-	repo, err := memory.NewRepoMemory("", *accrualTracker)
-	//repo, err := postgresql.NewRepoPostgreSQL(sc.DBString)
+	//repo, err := memory.NewRepoMemory("", *accrualTracker)
+	repo, err := postgresql.NewRepoPostgreSQL(sc.DBString, *accrualTracker)
 	if err != nil {
 		return err
 	}
-	gRouter, err := router.GopherRouter(
-		repo,
-		//localMiddleware.LogBody,
-	)
+	gRouter, err := router.GopherRouter(repo)
 	if err != nil {
 		return fmt.Errorf("failed to init router: %w", err)
 	}
