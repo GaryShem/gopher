@@ -23,7 +23,8 @@ func (am *AuthMiddleware) Login(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		id, err := am.Repo.UserLogin(username, password)
+
+		id, err := am.Repo.CheckUserCredentials(username, password)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(err.Error()))

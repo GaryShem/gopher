@@ -7,16 +7,16 @@ import (
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
 
-func (r *RepoMemory) BalanceList(userID int) (repository.BalanceInfo, error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (r *RepoMemory) ListBalance(userID int) (repository.BalanceInfo, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 	balance, ok := r.UserIDToBalance[userID]
 	if !ok {
 		return repository.BalanceInfo{}, repository.ErrUserNotFound
 	}
 	return balance, nil
 }
-func (r *RepoMemory) BalanceWithdraw(userID int, orderID string, amount float64) error {
+func (r *RepoMemory) WithdrawBalance(userID int, orderID string, amount float64) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if err := repository.ValidateOrderID(orderID); err != nil {
@@ -35,13 +35,13 @@ func (r *RepoMemory) BalanceWithdraw(userID int, orderID string, amount float64)
 	r.UserIDToWithdrawal[userID] = append(r.UserIDToWithdrawal[userID], repository.WithdrawalInfo{
 		Order:       orderID,
 		Sum:         amount,
-		ProcessedAt: time.Now().Format(time.RFC3339),
+		ProcessedAt: time.Now().UTC().Format(time.RFC3339),
 	})
 	return nil
 }
-func (r *RepoMemory) BalanceWithdrawInfo(userID int) ([]repository.WithdrawalInfo, error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (r *RepoMemory) GetBalanceWithdrawInfo(userID int) ([]repository.WithdrawalInfo, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 	info, ok := r.UserIDToWithdrawal[userID]
 	if !ok {
 		return []repository.WithdrawalInfo{}, repository.ErrNoWithdrawals

@@ -9,18 +9,24 @@ import (
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/logging"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/router"
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/postgresql"
+	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
 
-func RunServer(sc config.ServerConfig) error {
+func initLogger() error {
 	if err := logging.InitializeZapLogger("Info"); err != nil {
 		return err
 	}
+	return nil
+}
+
+func initRepo(sc config.ServerConfig) (repository.Repository, error) {
 	accrualTracker := accrual.NewBonusTracker(sc.AccrualAddress)
 	//repo, err := memory.NewRepoMemory("", *accrualTracker)
 	repo, err := postgresql.NewRepoPostgreSQL(sc.DBString, *accrualTracker)
-	if err != nil {
-		return err
-	}
+	return repo, err
+}
+
+func startRouter(sc config.ServerConfig, repo repository.Repository) error {
 	gRouter, err := router.GopherRouter(repo)
 	if err != nil {
 		return fmt.Errorf("failed to init router: %w", err)
@@ -29,6 +35,17 @@ func RunServer(sc config.ServerConfig) error {
 	if err = http.ListenAndServe(sc.RunAddress, gRouter); err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func RunServer(sc config.ServerConfig) error {
+	if err := initLogger(); err != nil {
+		return err
+	}
+	repo, err := initRepo(sc)
+	if err != nil {
+		return err
+	}
+	err = startRouter(sc, repo)
+	return err
 }

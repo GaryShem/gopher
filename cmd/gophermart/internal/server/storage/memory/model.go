@@ -13,8 +13,8 @@ type RepoMemory struct {
 	UserIDToOrder      map[int]map[string]repository.Order
 	UserIDToBalance    map[int]repository.BalanceInfo
 	UserIDToWithdrawal map[int][]repository.WithdrawalInfo
-	accrual            accrual.BonusTracker
-	lock               sync.Mutex
+	bonusTracker       accrual.BonusTracker
+	lock               sync.RWMutex
 }
 
 func NewRepoMemory(databaseURI string, accrual accrual.BonusTracker) (*RepoMemory, error) {
@@ -24,7 +24,7 @@ func NewRepoMemory(databaseURI string, accrual accrual.BonusTracker) (*RepoMemor
 		UserIDToOrder:      map[int]map[string]repository.Order{},
 		UserIDToBalance:    map[int]repository.BalanceInfo{},
 		UserIDToWithdrawal: map[int][]repository.WithdrawalInfo{},
-		accrual:            accrual,
+		bonusTracker:       accrual,
 	}, nil
 }
 

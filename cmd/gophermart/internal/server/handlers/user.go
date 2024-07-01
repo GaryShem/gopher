@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
 
@@ -15,21 +17,31 @@ func (l *LoyaltyHandler) UserRegister(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
 	defer func() { _ = r.Body.Close() }()
-	var register repository.RegisterRequest
+	var register repository.CredentialRequest
 	if err = json.Unmarshal(body, &register); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
 
-	if err = l.repo.UserRegister(register.Login, register.Password); err != nil {
+	hash, err := bcrypt.GenerateFromPassword([]byte(register.Password), bcrypt.DefaultCost)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+	if err = l.repo.RegisterUser(register.Login, string(hash)); err != nil {
 		if errors.Is(err, repository.ErrUserAlreadyExists) {
 			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(err.Error()))
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
 	b64token := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", register.Login, register.Password)))
@@ -44,13 +56,13 @@ func (l *LoyaltyHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = r.Body.Close() }()
-	var register repository.RegisterRequest
-	if err = json.Unmarshal(body, &register); err != nil {
+	var credentials repository.CredentialRequest
+	if err = json.Unmarshal(body, &credentials); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if _, err = l.repo.UserLogin(register.Login, register.Password); err != nil {
+	if _, err = l.repo.LoginUser(credentials.Login, credentials.Password); err != nil {
 		if errors.Is(err, repository.ErrUserAlreadyExists) {
 			w.WriteHeader(http.StatusConflict)
 			return
@@ -58,7 +70,7 @@ func (l *LoyaltyHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	b64token := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", register.Login, register.Password)))
+	b64token := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", credentials.Login, credentials.Password)))
 	w.Header().Set("Authorization", fmt.Sprintf("Basic %s", b64token))
 	w.WriteHeader(http.StatusOK)
 }

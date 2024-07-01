@@ -11,7 +11,7 @@ import (
 
 var ErrInternalConsistencyError = errors.New("internal consistency error")
 
-func (r *RepoMemory) OrderUpload(userID int, orderID string) error {
+func (r *RepoMemory) UploadOrder(userID int, orderID string) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if err := repository.ValidateOrderID(orderID); err != nil {
@@ -34,16 +34,16 @@ func (r *RepoMemory) OrderUpload(userID int, orderID string) error {
 	orders[orderID] = repository.Order{
 		Number:     orderID,
 		Status:     "NEW",
-		UploadedAt: time.Now().Format(time.RFC3339),
+		UploadedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 	r.UserIDToOrder[userID] = orders
-	go r.UpdateOrderProcessing(userID, orderID)
+	go r.ProcessOrderUpdate(userID, orderID)
 	return nil
 }
 
-func (r *RepoMemory) GetOrdersByUserID(userID int) ([]repository.Order, error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (r *RepoMemory) GetOrdersByUser(userID int) ([]repository.Order, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 	orders, ok := r.UserIDToOrder[userID]
 	result := make([]repository.Order, 0)
 	if ok {
@@ -57,12 +57,12 @@ func (r *RepoMemory) GetOrdersByUserID(userID int) ([]repository.Order, error) {
 	return result, nil
 }
 
-func (r *RepoMemory) UpdateOrderProcessing(userID int, orderID string) error {
+func (r *RepoMemory) ProcessOrderUpdate(userID int, orderID string) error {
 	startUpdate := time.Now()
 	defer func() {
-		logging.Log.Infoln("UpdateOrderProcessing took", time.Since(startUpdate))
+		logging.Log.Infoln("ProcessOrderUpdate took", time.Since(startUpdate))
 	}()
-	info, err := r.accrual.UpdateOrder(orderID)
+	info, err := r.bonusTracker.UpdateOrder(orderID)
 	if err != nil {
 		return err
 	}
@@ -77,10 +77,10 @@ func (r *RepoMemory) UpdateOrderProcessing(userID int, orderID string) error {
 			balance := r.UserIDToBalance[u]
 			balance.Current += info.Accrual
 			r.UserIDToBalance[u] = balance
-			logging.Log.Infoln("UpdateOrderProcessing success")
+			logging.Log.Infoln("ProcessOrderUpdate success")
 			return nil
 		}
 	}
-	logging.Log.Infoln("UpdateOrderProcessing fail")
+	logging.Log.Infoln("ProcessOrderUpdate fail")
 	return ErrInternalConsistencyError
 }

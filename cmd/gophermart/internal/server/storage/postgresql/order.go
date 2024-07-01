@@ -11,7 +11,7 @@ import (
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
 
-func (r *RepoPostgreSQL) OrderUpload(userID int, orderID string) error {
+func (r *RepoPostgreSQL) UploadOrder(userID int, orderID string) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if err := repository.ValidateOrderID(orderID); err != nil {
@@ -43,17 +43,17 @@ func (r *RepoPostgreSQL) OrderUpload(userID int, orderID string) error {
 		"user_id":     userID,
 		"status":      "NEW",
 		"accrual":     0,
-		"upload_time": time.Now().Format(time.RFC3339),
+		"upload_time": time.Now().UTC().Format(time.RFC3339),
 	}
 	var addedOrder repository.Order
 	if err = r.db.QueryRow(orderInsertSQL, insertArgs).Scan(&addedOrder.Number); err != nil {
 		return err
 	}
-	go r.UpdateOrderProcessing(userID, orderID)
+	go r.ProcessOrderUpdate(userID, orderID)
 	return nil
 }
 
-func (r *RepoPostgreSQL) GetOrdersByUserID(userID int) ([]repository.Order, error) {
+func (r *RepoPostgreSQL) GetOrdersByUser(userID int) ([]repository.Order, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	orderSelectSQL := `SELECT number, status, accrual, uploaded_at FROM orders 
@@ -90,12 +90,12 @@ func (r *RepoPostgreSQL) GetOrdersByUserID(userID int) ([]repository.Order, erro
 	return result, nil
 }
 
-func (r *RepoPostgreSQL) UpdateOrderProcessing(userID int, orderID string) error {
+func (r *RepoPostgreSQL) ProcessOrderUpdate(userID int, orderID string) error {
 	startUpdate := time.Now()
 	defer func() {
-		logging.Log.Infoln("UpdateOrderProcessing took", time.Since(startUpdate))
+		logging.Log.Infoln("ProcessOrderUpdate took", time.Since(startUpdate))
 	}()
-	info, err := r.accrual.UpdateOrder(orderID)
+	info, err := r.bonusTracker.UpdateOrder(orderID)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,12 @@ func (r *RepoPostgreSQL) UpdateOrderProcessing(userID int, orderID string) error
 		return err
 	}
 	if info.Accrual > 0 {
-		balance, err := r.BalanceList(userID)
+		args = pgx.NamedArgs{
+			"user_id": userID,
+		}
+		var balance repository.BalanceInfo
+		row := r.db.QueryRow(selectBalanceQuery, args)
+		err = row.Scan(&balance.Current, &balance.Withdrawn)
 		if err != nil {
 			return err
 		}

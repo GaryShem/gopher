@@ -18,7 +18,7 @@ func (l *LoyaltyHandler) BalanceInfo(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
-	info, err := l.repo.BalanceList(userID)
+	info, err := l.repo.ListBalance(userID)
 	if err != nil {
 		w.WriteHeader(502)
 		_, _ = w.Write([]byte(err.Error()))
@@ -54,7 +54,7 @@ func (l *LoyaltyHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request)
 		_, _ = w.Write([]byte("unable to unmarshal request body"))
 		return
 	}
-	err = l.repo.BalanceWithdraw(userID, info.Order, info.Sum)
+	err = l.repo.WithdrawBalance(userID, info.Order, info.Sum)
 	if err != nil {
 		if errors.Is(err, repository.ErrBalanceNotEnough) {
 			w.WriteHeader(http.StatusPaymentRequired)
@@ -74,7 +74,7 @@ func (l *LoyaltyHandler) BalanceWithdrawInfo(w http.ResponseWriter, r *http.Requ
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	withdrawals, err := l.repo.BalanceWithdrawInfo(userID)
+	withdrawals, err := l.repo.GetBalanceWithdrawInfo(userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNoWithdrawals) {
 			w.WriteHeader(http.StatusNoContent)

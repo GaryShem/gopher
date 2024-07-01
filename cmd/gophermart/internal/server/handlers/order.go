@@ -23,7 +23,7 @@ func (l *LoyaltyHandler) OrderUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	orderNumber := string(orderNumberBytes)
-	err = l.repo.OrderUpload(userID, orderNumber)
+	err = l.repo.UploadOrder(userID, orderNumber)
 	if err != nil {
 		if errors.Is(err, repository.ErrOrderUploadedSameUser) {
 			w.WriteHeader(http.StatusOK)
@@ -45,7 +45,7 @@ func (l *LoyaltyHandler) OrderList(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(503)
 		return
 	}
-	orders, err := l.repo.GetOrdersByUserID(userID)
+	orders, err := l.repo.GetOrdersByUser(userID)
 	if err != nil {
 		w.WriteHeader(502)
 		return

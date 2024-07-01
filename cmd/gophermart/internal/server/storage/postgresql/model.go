@@ -1,6 +1,7 @@
 package postgresql
 
 import (
+	"context"
 	"database/sql"
 	"sync"
 
@@ -10,33 +11,7 @@ import (
 	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
 )
 
-type RepoPostgreSQL struct {
-	ConnString string
-	accrual    accrual.BonusTracker
-	db         *sql.DB
-	lock       *sync.Mutex
-}
-
-func NewRepoPostgreSQL(conn string, accrual accrual.BonusTracker) (*RepoPostgreSQL, error) {
-	storage := &RepoPostgreSQL{
-		ConnString: conn,
-		accrual:    accrual,
-		lock:       &sync.Mutex{},
-	}
-	err := storage.Init()
-	if err != nil {
-		return nil, err
-	}
-	return storage, nil
-}
-
-func (r *RepoPostgreSQL) Init() error {
-	db, err := sql.Open("pgx", r.ConnString)
-	if err != nil {
-		return err
-	}
-	// create tables
-	createUserTableSQL := `create table if not exists users
+const createUserTableSQL = `create table if not exists users
 (
     id       serial
         constraint users_pk
@@ -44,7 +19,7 @@ func (r *RepoPostgreSQL) Init() error {
     name     text not null,
     password text not null
 );`
-	createOrderTableSQL := `create table if not exists orders
+const createOrderTableSQL = `create table if not exists orders
 (
     number      text                       not null
         constraint orders_pk
@@ -57,7 +32,7 @@ func (r *RepoPostgreSQL) Init() error {
     accrual     double precision default 0 not null,
     uploaded_at text                       not null
 );`
-	createBalanceTableSQL := `create table if not exists balance
+const createBalanceTableSQL = `create table if not exists balance
 (
     user_id   integer                    not null
         constraint balance_pk
@@ -68,7 +43,7 @@ func (r *RepoPostgreSQL) Init() error {
     current   double precision default 0 not null,
     withdrawn double precision default 0 not null
 );`
-	createWithdrawTableSQL := `create table if not exists withdrawals
+const createWithdrawTableSQL = `create table if not exists withdrawals
 (
     id           serial
         constraint withdrawals_pk
@@ -81,23 +56,80 @@ func (r *RepoPostgreSQL) Init() error {
             references users
             on update cascade on delete cascade
 );`
-	if _, err = db.Exec(createUserTableSQL); err != nil {
-		defer func() { _ = db.Close() }()
-		return err
+
+type RepoPostgreSQL struct {
+	ConnString   string
+	bonusTracker accrual.BonusTracker
+	db           *sql.DB
+	lock         *sync.RWMutex
+}
+
+func NewRepoPostgreSQL(conn string, accrual accrual.BonusTracker) (*RepoPostgreSQL, error) {
+	storage := &RepoPostgreSQL{
+		ConnString:   conn,
+		bonusTracker: accrual,
+		lock:         &sync.RWMutex{},
 	}
-	if _, err = db.Exec(createOrderTableSQL); err != nil {
-		defer func() { _ = db.Close() }()
-		return err
+	err := storage.Init()
+	if err != nil {
+		return nil, err
 	}
-	if _, err = db.Exec(createBalanceTableSQL); err != nil {
-		defer func() { _ = db.Close() }()
-		return err
-	}
-	if _, err = db.Exec(createWithdrawTableSQL); err != nil {
-		defer func() { _ = db.Close() }()
+	return storage, nil
+}
+
+func (r *RepoPostgreSQL) createUserTable(tx *sql.Tx) error {
+	_, err := tx.Exec(createUserTableSQL)
+	return err
+}
+
+func (r *RepoPostgreSQL) createOrderTable(tx *sql.Tx) error {
+	_, err := tx.Exec(createOrderTableSQL)
+	return err
+}
+
+func (r *RepoPostgreSQL) createBalanceTable(tx *sql.Tx) error {
+	_, err := tx.Exec(createBalanceTableSQL)
+	return err
+}
+
+func (r *RepoPostgreSQL) createWithdrawTable(tx *sql.Tx) error {
+	_, err := tx.Exec(createWithdrawTableSQL)
+	return err
+}
+
+func (r *RepoPostgreSQL) Init() error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	db, err := sql.Open("pgx", r.ConnString)
+	if err != nil {
 		return err
 	}
 	r.db = db
+	tx, err := r.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	// create tables
+	if err = r.createUserTable(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if err = r.createOrderTable(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if err = r.createBalanceTable(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if err = r.createWithdrawTable(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

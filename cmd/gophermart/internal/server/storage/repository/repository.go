@@ -46,23 +46,24 @@ type WithdrawalInfo struct {
 	ProcessedAt string  `json:"processed_at,omitempty"`
 }
 
-type RegisterRequest struct {
+type CredentialRequest struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }
 
 type Repository interface {
-	UserRegister(name, password string) error
-	UserLogin(name, password string) (int, error)
+	RegisterUser(name, password string) error
+	LoginUser(name, password string) (int, error)
 	GetUserByName(name string) (User, error)
+	CheckUserCredentials(name, password string) (int, error)
 
-	OrderUpload(userID int, orderID string) error
-	GetOrdersByUserID(userID int) ([]Order, error)
-	UpdateOrderProcessing(userID int, orderID string) error
+	UploadOrder(userID int, orderID string) error
+	GetOrdersByUser(userID int) ([]Order, error)
+	ProcessOrderUpdate(userID int, orderID string) error
 
-	BalanceList(userID int) (BalanceInfo, error)
-	BalanceWithdraw(userID int, orderID string, amount float64) error
-	BalanceWithdrawInfo(userID int) ([]WithdrawalInfo, error)
+	ListBalance(userID int) (BalanceInfo, error)
+	WithdrawBalance(userID int, orderID string, amount float64) error
+	GetBalanceWithdrawInfo(userID int) ([]WithdrawalInfo, error)
 }
 
 func ValidateOrderID(orderID string) error {
