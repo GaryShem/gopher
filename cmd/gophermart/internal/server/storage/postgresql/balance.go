@@ -1,0 +1,106 @@
+package postgresql
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+
+	"github.com/GaryShem/gopher/cmd/gophermart/internal/server/storage/repository"
+)
+
+const selectBalanceQuery = `SELECT current, withdrawn FROM balance WHERE user_id = @user_id`
+const updateBalanceQuery = `UPDATE balance SET
+		current = @current, withdrawn = @withdrawn
+        WHERE user_id = @user_id`
+const selectWithdrawQuery = `SELECT order_number, sum, processed_at FROM withdrawals WHERE user_id = @user_id`
+const insertWithdrawQuery = `INSERT INTO withdrawals 
+    	(order_number, sum, processed_at, user_id) VALUES 
+    	(@order_number, @sum, @processed_at, @user_id)`
+
+func (r *RepoPostgreSQL) ListBalance(userID int) (repository.BalanceInfo, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	args := pgx.NamedArgs{
+		"user_id": userID,
+	}
+	var info repository.BalanceInfo
+	row := r.db.QueryRow(selectBalanceQuery, args)
+	err := row.Scan(&info.Current, &info.Withdrawn)
+	return info, err
+}
+func (r *RepoPostgreSQL) WithdrawBalance(userID int, orderID string, amount float64) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := repository.ValidateOrderID(orderID); err != nil {
+		return repository.ErrOrderIDFormatInvalid
+	}
+
+	args := pgx.NamedArgs{
+		"user_id": userID,
+	}
+	var balance repository.BalanceInfo
+	row := tx.QueryRow(selectBalanceQuery, args)
+	err = row.Scan(&balance.Current, &balance.Withdrawn)
+	if err != nil {
+		return err
+	}
+	if balance.Current < amount {
+		return fmt.Errorf("%w withdrawing %v from %v", repository.ErrBalanceNotEnough, amount, balance.Current)
+	}
+	balance.Current -= amount
+	balance.Withdrawn += amount
+	args = pgx.NamedArgs{
+		"user_id":   userID,
+		"current":   balance.Current,
+		"withdrawn": balance.Withdrawn,
+	}
+
+	if _, err = tx.Exec(updateBalanceQuery, args); err != nil {
+		return err
+	}
+	args = pgx.NamedArgs{
+		"order_number": orderID,
+		"user_id":      userID,
+		"processed_at": time.Now().UTC().Format(time.RFC3339),
+		"sum":          amount,
+	}
+	if _, err = tx.Exec(insertWithdrawQuery, args); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+func (r *RepoPostgreSQL) GetBalanceWithdrawInfo(userID int) ([]repository.WithdrawalInfo, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+	args := pgx.NamedArgs{
+		"user_id": userID,
+	}
+	rows, err := r.db.Query(selectWithdrawQuery, args)
+	if err != nil {
+		return nil, err
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	defer func() { _ = rows.Close() }()
+	result := []repository.WithdrawalInfo{}
+	for rows.Next() {
+		var info repository.WithdrawalInfo
+		err = rows.Scan(&info.Order, &info.Sum, &info.ProcessedAt)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, info)
+	}
+
+	return result, err
+}
